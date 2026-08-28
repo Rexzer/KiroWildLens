@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { QrCode, Keyboard, X } from "lucide-react";
+import { QrCode, Keyboard, X, Sparkles } from "lucide-react";
 
 // Real QR scan = the marker trigger. The decoded text is passed to onDetected so
 // the app can select the right species (wildlens://<id>). A hidden manual
@@ -8,7 +8,7 @@ import { QrCode, Keyboard, X } from "lucide-react";
 // camera won't start. onBack lets the guest cancel out and return home
 // without completing a scan — the camera is stopped via the effect cleanup
 // the moment this component unmounts.
-export default function QrScanner({ onDetected, onBack, prompt }) {
+export default function QrScanner({ onDetected, onBack, onUseVision, prompt }) {
   const ref = useRef(null);
   const scannerRef = useRef(null);
   const [camError, setCamError] = useState(false);
@@ -57,6 +57,11 @@ export default function QrScanner({ onDetected, onBack, prompt }) {
         </div>
       )}
       <div className="scan-hint">Scanning… hold steady over the marker</div>
+      {onUseVision && (
+        <button className="cta ghost scan-vision-cta" onClick={onUseVision}>
+          <Sparkles size={15} /> No marker? Identify the animal by camera
+        </button>
+      )}
     </div>
   );
 }

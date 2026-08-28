@@ -2,7 +2,7 @@ import { Check, Heart } from "lucide-react";
 
 // REVEAL beat — closes the curiosity gap by answering the guest's earlier
 // prediction, then the conservation story. Understanding over dashboards.
-export default function ConservationReveal({ conservation, predict, guessIndex, glow, onDone }) {
+export default function ConservationReveal({ conservation, predict, guessIndex, glow, onDone, ctaLabel }) {
   const right = guessIndex === predict.answerIndex;
   return (
     <div className="beat cons-beat">
@@ -23,7 +23,7 @@ export default function ConservationReveal({ conservation, predict, guessIndex, 
       </div>
 
       <button className="cta" onClick={onDone}>
-        <Heart size={16} /> Add to Wildlife Wrapped
+        <Heart size={16} /> {ctaLabel || "Add to Wildlife Wrapped"}
       </button>
     </div>
   );

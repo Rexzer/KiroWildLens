@@ -1,11 +1,16 @@
 /*
- * WildLens AI client — ONE call pattern, used at TWO moments in the journey.
+ * WildLens AI client — ONE call pattern, used across the journey.
  *
  *   Call 1 (journey-shaping): classifyCuriosity(signals) -> variantId
  *       Reads the guest's Hornbill choices, decides their curiosity type,
  *       and returns which PRE-AUTHORED Orangutan question they should see.
  *   Call 2 (closing reflection): generateReflection(tags) -> one sentence
  *       Phrases the guest's Wildlife Wrapped profile line.
+ *   Call 3 (grounded conversation): askAnimal(species, question) -> answer
+ *       Answers a guest's free-text question in the animal's voice, drawing
+ *       ONLY on that species' pre-authored `ask.knowledge`. Local retrieval by
+ *       default; the optional LLM is given the same entries as its ONLY source
+ *       and instructed to say "I don't know" rather than invent anything.
  *
  * The AI only ever SELECTS or PHRASES from fixed, pre-approved content —
  * it never invents a new fact or a new question. Facts stay deterministic.
@@ -86,6 +91,84 @@ export async function generateReflection(curiosityType) {
       `one-sentence reflection on the kind of wildlife stories this guest seemed drawn to. ` +
       `Reflect only the pattern — invent no facts about specific animals.`;
     return await callLLM(prompt);
+  } catch {
+    return fallback;
+  }
+}
+
+
+/* ============================================================================
+ * Call 3 — "Ask the Animal": grounded conversational answers.
+ * ==========================================================================*/
+
+// Tiny stop-word list so retrieval scores on meaningful words, not "the/what".
+const STOP = new Set([
+  "the", "a", "an", "is", "are", "do", "does", "did", "you", "your", "yours",
+  "i", "me", "my", "we", "to", "of", "in", "on", "at", "for", "and", "or",
+  "how", "what", "why", "where", "when", "who", "which", "can", "could",
+  "would", "will", "be", "have", "has", "with", "about", "it", "its", "so",
+  "much", "many", "some", "any", "get", "got", "there",
+]);
+
+function tokenize(text) {
+  return (text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w && !STOP.has(w));
+}
+
+// Score one knowledge entry against the guest's question. Multi-word keywords
+// (e.g. "long arms", "palm oil") match as a phrase; single words match tokens.
+function scoreEntry(entry, qTokens, qJoined) {
+  const tokenSet = new Set(qTokens);
+  let score = 0;
+  for (const kw of entry.keywords || []) {
+    const k = kw.toLowerCase();
+    if (k.includes(" ")) {
+      if (qJoined.includes(k)) score += 3;
+    } else if (tokenSet.has(k)) {
+      score += 2;
+    } else if (qTokens.some((t) => t.length > 4 && (t.includes(k) || k.includes(t)))) {
+      score += 1; // loose stem match (fruits~fruit, forests~forest)
+    }
+  }
+  return score;
+}
+
+// Deterministic local answer (also the default path). Returns the best-matching
+// pre-authored line, or the species' friendly fallback if nothing scores.
+export function localAnswer(species, question) {
+  const kb = species?.ask?.knowledge || [];
+  const qJoined = " " + (question || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ") + " ";
+  const qTokens = tokenize(question);
+  if (!qTokens.length || !kb.length) {
+    return species?.ask?.fallback || "Ask me about my food, my home, or how I help the forest!";
+  }
+  let best = null;
+  let bestScore = 0;
+  for (const entry of kb) {
+    const s = scoreEntry(entry, qTokens, qJoined);
+    if (s > bestScore) { bestScore = s; best = entry; }
+  }
+  if (best && bestScore >= 2) return best.a;
+  return species?.ask?.fallback || "Ask me about my food, my home, or how I help the forest!";
+}
+
+export async function askAnimal(species, question) {
+  const fallback = localAnswer(species, question);
+  if (!ENDPOINT) return fallback;
+  try {
+    // The LLM gets the pre-authored knowledge as its ONLY source of truth.
+    const facts = (species?.ask?.knowledge || []).map((e) => `- ${e.a}`).join("\n");
+    const prompt =
+      `You ARE a ${species.name}, replying in the first person (voice: ${species.voice}). ` +
+      `Answer the visitor's question in 1-2 short, warm, kid-friendly sentences. ` +
+      `Use ONLY the facts below. If the answer is not in the facts, say you don't know ` +
+      `in a friendly way and suggest what they could ask instead — never invent facts, ` +
+      `numbers, or claims.\n\nFACTS:\n${facts}\n\nVISITOR QUESTION: ${question}`;
+    const text = await callLLM(prompt);
+    return text || fallback;
   } catch {
     return fallback;
   }

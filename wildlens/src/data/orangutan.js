@@ -10,6 +10,43 @@ export default {
   glow: "#5EEAD4",
   backdrop: "jungle",
 
+  // ── Ask the Animal (AI CONNECT beat) ─────────────────────────────────
+  // Same grounded pattern as the hornbill: the chatbot answers ONLY from this
+  // pre-authored knowledge, in first person, and never invents a fact.
+  voice: "gentle and thoughtful, a person of the forest",
+  ask: {
+    greeting:
+      "Hey there — I'm a Sumatran Orangutan, a person of the forest. Ask me anything!",
+    suggested: [
+      "What do you eat?",
+      "How do you get around the forest?",
+      "Why are you endangered?",
+      "How do you help the forest?",
+    ],
+    fallback:
+      "Hmm — even my keepers are still learning that one! Try asking about my food, my long arms, my forest home, or why I'm endangered.",
+    knowledge: [
+      { keywords: ["eat", "food", "diet", "fruit", "hungry", "breakfast", "meal", "leaves", "bark", "feed"],
+        a: "I'm the forest's great fruit-eater — ripe fruit is most of my diet. When fruit is scarce I fall back on bark, leaves and the odd insect." },
+      { keywords: ["live", "home", "habitat", "where", "forest", "rainforest", "sumatra", "jungle", "tree", "from"],
+        a: "I live in the rainforests of Sumatra, high up in the trees." },
+      { keywords: ["arm", "swing", "move", "climb", "ground", "walk", "hang", "travel", "long arms", "get around", "brachiate"],
+        a: "My arms are huge — wider than I am tall — and I swing from tree to tree. I'm the largest tree-dwelling animal on Earth, so I rarely touch the ground." },
+      { keywords: ["seed", "help", "plant", "garden", "important", "matter", "why", "ecosystem", "forest grow"],
+        a: "By eating fruit across a huge range and dropping the seeds, I plant the very forest I depend on — I'm a gardener of the rainforest." },
+      { keywords: ["baby", "infant", "mother", "mum", "smart", "clever", "intelligent", "learn", "nest", "sleep", "tool"],
+        a: "Orangutan mums raise a baby for years, teaching it which fruits to eat and how to weave a fresh leafy nest to sleep in each night — we're very clever." },
+      { keywords: ["endangered", "danger", "threat", "extinct", "conservation", "palm oil", "dying", "disappear", "risk", "protect", "save", "critical", "threatened"],
+        a: "I'm Critically Endangered. Forest cleared for palm oil is erasing my home, and infants are orphaned when the trees come down." },
+      { keywords: ["big", "size", "weigh", "heavy", "tall", "weight", "how big", "strong"],
+        a: "A big male can weigh around 90kg — yet I still live my whole life up in the canopy." },
+      { keywords: ["name", "who", "called", "what animal", "species", "mean"],
+        a: "I'm a Sumatran Orangutan — and 'orang hutan' means 'person of the forest'." },
+    ],
+  },
+
+  visionMatch: ["orangutan", "orang", "ape", "monkey", "gibbon", "chimpanzee", "gorilla", "primate", "macaque"],
+
   // AI picks one of these based on the guest's Hornbill behaviour.
   predictVariants: {
     food_focused: {

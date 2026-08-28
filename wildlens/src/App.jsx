@@ -9,6 +9,7 @@ import MapView from "./components/MapView.jsx";
 import TicketsView from "./components/TicketsView.jsx";
 import ExploreView from "./components/ExploreView.jsx";
 import AccountView from "./components/AccountView.jsx";
+import AnimalScanner from "./components/AnimalScanner.jsx";
 import { RotateCcw, Home, X } from "lucide-react";
 import hornbill from "./data/hornbill.js";
 import orangutan from "./data/orangutan.js";
@@ -19,6 +20,12 @@ import { loadPersisted, savePersisted, clearPersisted } from "./storage.js";
 // QR still works in a pinch.
 const SPECIES = { great_hornbill: hornbill, sumatran_orangutan: orangutan };
 const ORDER = ["great_hornbill", "sumatran_orangutan"];
+
+// Catalog the scan-any-animal vision uses to map what the camera sees to a
+// species (see components/AnimalScanner.jsx + ai/vision.js).
+const VISION_CATALOG = ORDER.map((id) => ({
+  id, name: SPECIES[id].name, emoji: SPECIES[id].emoji, keywords: SPECIES[id].visionMatch || [],
+}));
 
 function resolveSpecies(text, doneIds) {
   const m = /wildlens:\/\/([a-z_]+)/i.exec(text || "");
@@ -121,7 +128,7 @@ export default function App() {
     id, name: SPECIES[id].name, emoji: SPECIES[id].emoji, count: s.scanCounts[id] || 0,
   }));
 
-  const showChrome = !["home", "wrapped", "map", "tickets", "explore", "account"].includes(s.stage);
+  const showChrome = !["home", "wrapped", "map", "tickets", "explore", "account", "animalscan"].includes(s.stage);
 
   return (
     <div className="app">
@@ -147,6 +154,15 @@ export default function App() {
             ? "Point your camera at a WildLens marker near the enclosure."
             : "Now walk to the next animal and scan its WildLens marker."}
           onDetected={onDetected}
+          onUseVision={() => setS((p) => ({ ...p, stage: "animalscan" }))}
+          onBack={goHome}
+        />
+      )}
+
+      {s.stage === "animalscan" && (
+        <AnimalScanner
+          catalog={VISION_CATALOG}
+          onMatch={(id) => onDetected(`wildlens://${id}`)}
           onBack={goHome}
         />
       )}
